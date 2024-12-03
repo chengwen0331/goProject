@@ -64,8 +64,19 @@ func encryptHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 	}
 
-	invitationCode := requestData["invitation_code"]
+	groupID := requestData["groupID"]
+	subgroupID := requestData["subgroupID"]
 	//fmt.Println("Received invitation code:", invitationCode)
+
+	validity := time.Duration(5 * time.Minute)
+	expiry := time.Now().Add(validity).UnixMilli()
+	// Convert to milliseconds since epoch if needed
+
+	// Concatenate into invitation code
+	invitationCode := fmt.Sprintf("%s/%s/%d", groupID, subgroupID, expiry)
+
+	// Output the result
+	fmt.Println("Invitation Code:", invitationCode)
 
 	// Encrypt the invitation code
 	encryptedCode, err := encryptCode(invitationCode)
@@ -102,7 +113,7 @@ func encryptCode(code string) (string, error) {
 
 	stream := cipher.NewCFBEncrypter(block, iv)                // Create a new CFB encrypter. It uses the AES block cipher and the generated IV.
 	stream.XORKeyStream(ciphertext[aes.BlockSize:], plaintext) // Encrypt the plaintext by applying the XORKeyStream to the plaintext bytes. The result is written to ciphertext, starting from the position after the IV.
-
+	fmt.Println("Received cccode:", ciphertext[aes.BlockSize:])
 	// Return the encrypted code as a base64-encoded string
 	return base64.URLEncoding.EncodeToString(ciphertext), nil
 }
@@ -110,7 +121,7 @@ func encryptCode(code string) (string, error) {
 func decryptHandler(c echo.Context) error {
 	secretKey := os.Getenv("SECRET_KEY")
 	fmt.Println("Secret Key:", secretKey)
-	fmt.Println(len([]byte("b'h\x94\xd6\xcag\x99\xf0_\xe0_j\xf4\xd8\x07\xf2\xbf\r\xf8\xc1\xfb\xa1kb@\xbb\x7f\xfd\x88\xe4'")))
+	// fmt.Println(len([]byte("b'h\x94\xd6\xcag\x99\xf0_\xe0_j\xf4\xd8\x07\xf2\xbf\r\xf8\xc1\xfb\xa1kb@\xbb\x7f\xfd\x88\xe4'")))
 
 	if len(secretKey) > 32 {
 		secretKey = secretKey[:32] // Truncate to 32 bytes for AES-256
