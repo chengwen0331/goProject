@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"golangProject/config"
 	"log"
 	"net/http"
 	"os"
@@ -21,6 +22,14 @@ import (
 )
 
 func main() {
+	cfg := config.GetConfig()
+	// Print configuration values
+	fmt.Printf("Server: %s\n", cfg.Server)
+	fmt.Printf("Realm: %s\n", cfg.Realm)
+	fmt.Printf("ClientID: %s\n", cfg.ClientID)
+	fmt.Printf("ClientSecret: %s\n", cfg.ClientSecret)
+	fmt.Printf("RedirectURI: %s\n", cfg.ClientUrlID)
+
 	// Initialize Echo instance
 	e := echo.New()
 
