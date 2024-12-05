@@ -22,7 +22,7 @@ type UserInfo struct {
 	// Add other fields as necessary
 }
 
-var keycloakData KeycloakResponse
+var userInfo UserInfo
 
 func GetUserInfoHandler(c echo.Context) error {
 	// Call the FetchUserInfo function
@@ -41,6 +41,8 @@ func GetUserInfoHandler(c echo.Context) error {
 func FetchUserInfo() (*UserInfo, error) {
 	cfg := config.GetConfig()
 
+	//fmt.Println("Keycloak access token retrieved:", keycloakResponse.AccessToken)
+
 	// Construct the user info endpoint URL
 	userInfoUrl := fmt.Sprintf("%s:8080/realms/%s/protocol/openid-connect/userinfo", cfg.Server, cfg.Realm)
 
@@ -50,7 +52,7 @@ func FetchUserInfo() (*UserInfo, error) {
 		return nil, fmt.Errorf("failed to create request: %v", err)
 	}
 
-	req.Header.Set("Authorization", "Bearer "+keycloakData.AccessToken)
+	req.Header.Set("Authorization", "Bearer "+keycloakResponse.AccessToken)
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -65,7 +67,7 @@ func FetchUserInfo() (*UserInfo, error) {
 	}
 
 	// Decode the user info response
-	var userInfo UserInfo
+	//var userInfo UserInfo
 	err = json.NewDecoder(resp.Body).Decode(&userInfo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode response: %v", err)

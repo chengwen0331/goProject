@@ -50,16 +50,23 @@ func main() {
 	// Set up the POST route for token exchange
 	e.POST("/token", keycloak.TokenExchangeHandler)
 
-	// Set up the POST route for token exchange
+	// Set up the POST route to get user info
 	e.GET("/userinfo", keycloak.GetUserInfoHandler)
+
+	// Define the /logout route and bind it to the LogoutHandler
+	e.POST("/logout", keycloak.LogoutHandler)
+
+	//get client access token
+	e.POST("/client", keycloak.GetAccessToken)
+
+	//create group
+	e.POST("/create-group", keycloak.CreateGroup)
+
+	//get groupid
+	//e.POST("/create-subgroup", keycloak.AddSubGroups)
 
 	// Define your routes
 	e.POST("/encrypt", encryptHandler)
-
-	// Define routes
-	// e.POST("/decrypt", func(c echo.Context) error {
-	// 	return decryptHandler(c, secretKey)
-	// })
 
 	e.POST("/decrypt", decryptHandler)
 

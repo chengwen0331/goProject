@@ -22,7 +22,7 @@ import (
 // 	TokenType    string `json:"token_type"`
 // }
 
-var keycloakResponse KeycloakResponse
+//var keycloakResponse KeycloakResponse
 
 func TokenExchangeHandler(c echo.Context) error {
 	// Parse Google ID token from the request
@@ -174,4 +174,52 @@ func refreshToken() error {
 	fmt.Println("Access token and refresh token have been updated.")
 	return nil
 
+}
+
+// get client access token
+func GetAccessToken(c echo.Context) error {
+	cfg := config.GetConfig()
+	// Construct the Keycloak token URL
+	keycloakTokenUrl := fmt.Sprintf("%s:8080/realms/%s/protocol/openid-connect/token", cfg.Server, cfg.Realm)
+
+	// Prepare the data for the POST request
+	data := url.Values{}
+	data.Add("client_id", cfg.ClientID)
+	data.Add("client_secret", cfg.ClientSecret)
+	data.Add("grant_type", "client_credentials")
+
+	// Make the POST request to Keycloak
+	resp, err := http.PostForm(keycloakTokenUrl, data)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": fmt.Sprintf("Error making request to Keycloak: %v", err),
+		})
+	}
+	defer resp.Body.Close()
+
+	// Read and parse the response
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": fmt.Sprintf("Error reading Keycloak response: %v", err),
+		})
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": fmt.Sprintf("Keycloak returned an error: %s", string(body)),
+		})
+	}
+
+	// Decode the response body into a map
+	if err := json.Unmarshal(body, &clientKeycloak); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": fmt.Sprintf("Error decoding response: %v", err),
+		})
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"access_token":  clientKeycloak.AccessToken,
+		"refresh_token": clientKeycloak.RefreshToken,
+	})
 }
