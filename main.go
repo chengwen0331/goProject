@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"golangProject/config"
+	"golangProject/keycloak"
 	"log"
 	"net/http"
 	"os"
@@ -46,9 +47,11 @@ func main() {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
 
-	// Retrieve the secret key from .env
-	//secretKey := os.Getenv("SECRET_KEY")
-	//fmt.Printf("SECRET_KEY: %s\n", secretKey)
+	// Set up the POST route for token exchange
+	e.POST("/token", keycloak.TokenExchangeHandler)
+
+	// Set up the POST route for token exchange
+	e.GET("/userinfo", keycloak.GetUserInfoHandler)
 
 	// Define your routes
 	e.POST("/encrypt", encryptHandler)
