@@ -13,6 +13,7 @@ import (
 
 // CreateGroupRequest represents the request structure for creating a group
 type CreateGroupRequest struct {
+	ID         string              `json:"id,omitempty"` // Include 'omitempty' to omit the field in JSON if it's empty
 	Name       string              `json:"name"`
 	Attributes map[string][]string `json:"attributes"`
 }
@@ -74,6 +75,7 @@ func CreateGroup(c echo.Context) error {
 
 	// Handle the response
 	if resp.StatusCode == http.StatusCreated {
+
 		// Return success response without parsing the body
 		groupResp, err := FetchGroupAndAddSubGroups(c)
 		if err != nil {
@@ -81,6 +83,8 @@ func CreateGroup(c echo.Context) error {
 				"error": fmt.Sprintf("Failed to add subgroups: %v", err),
 			})
 		}
+
+		fmt.Printf("Group ID Parent", groupResp)
 
 		// Return success response without parsing the body
 		return c.JSON(http.StatusOK, map[string]interface{}{
@@ -124,15 +128,21 @@ func FetchGroupAndAddSubGroups(c echo.Context) (string, error) {
 	}
 
 	// Decode the response to get the group ID
-	var groups []map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&groups); err != nil {
+	var switchCompanies []map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&switchCompanies); err != nil {
 		return "", fmt.Errorf("Failed to decode response: %v", err)
 	}
 
 	var groupID string
-	for _, group := range groups {
+	for _, group := range switchCompanies {
+		fmt.Print("Data:", group["name"])
 		if group["name"] == createGroup.Name {
 			groupID, _ = group["id"].(string)
+			switchCompany = SwitchCompany{
+				ID:         groupID,
+				Name:       group["name"].(string),
+				Attributes: group["attributes"].(map[string][]string), // Cast Attributes
+			}
 			break
 		}
 	}

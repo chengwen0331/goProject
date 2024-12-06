@@ -2,10 +2,10 @@ package keycloak
 
 // Define the response structure for the token
 type SwitchCompany struct {
-	AccessToken  string `json:"access_token"` //keep storing the token until it expires
-	RefreshToken string `json:"refresh_token"`
-	ExpiresIn    int    `json:"expires_in"`
-	TokenType    string `json:"token_type"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	//Path       string              `json:"path"`
+	Attributes map[string][]string `json:"attributes"`
 }
 
 var switchCompany SwitchCompany
