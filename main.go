@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golangProject/config"
 	"golangProject/keycloak"
 	"log"
 	"net/http"
@@ -23,13 +22,6 @@ import (
 )
 
 func main() {
-	cfg := config.GetConfig()
-	// Print configuration values
-	fmt.Printf("Server: %s\n", cfg.Server)
-	fmt.Printf("Realm: %s\n", cfg.Realm)
-	fmt.Printf("ClientID: %s\n", cfg.ClientID)
-	fmt.Printf("ClientSecret: %s\n", cfg.ClientSecret)
-	fmt.Printf("RedirectURI: %s\n", cfg.ClientUrlID)
 
 	// Initialize Echo instance
 	e := echo.New()
@@ -63,7 +55,7 @@ func main() {
 	e.POST("/create-group", keycloak.CreateGroup)
 
 	//get groupid
-	//e.POST("/create-subgroup", keycloak.AddSubGroups)
+	e.POST("/create-subgroup", keycloak.AddSubGroups)
 
 	// Define your routes
 	e.POST("/encrypt", encryptHandler)

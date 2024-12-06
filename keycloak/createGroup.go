@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"golangProject/config"
+	"io"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -32,8 +33,7 @@ func CreateGroup(c echo.Context) error {
 	//fmt.Println("Keycloak access token retrieved:", clientKeycloak.AccessToken)
 
 	// Read the group data from the request body
-	var groupRequest CreateGroupRequest
-	if err := c.Bind(&groupRequest); err != nil {
+	if err := c.Bind(&createGroup); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": fmt.Sprintf("Failed to bind request: %v", err),
 		})
@@ -43,7 +43,7 @@ func CreateGroup(c echo.Context) error {
 	url := fmt.Sprintf("%s:8080/admin/realms/%s/groups", cfg.Server, cfg.Realm)
 
 	// Prepare the request body
-	groupData, err := json.Marshal(groupRequest)
+	groupData, err := json.Marshal(createGroup)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": fmt.Sprintf("Failed to marshal request data: %v", err),
@@ -103,6 +103,7 @@ func FetchGroupAndAddSubGroups(c echo.Context) (string, error) {
 		return "", fmt.Errorf("Missing access token")
 	}
 
+	fmt.Println("Create Group name:", createGroup.Name)
 	// Fetch the group by name
 	groupFetchUrl := fmt.Sprintf("%s:8080/admin/realms/%s/groups?search=%s", cfg.Server, cfg.Realm, createGroup.Name)
 	req, err := http.NewRequest("GET", groupFetchUrl, nil)
@@ -128,21 +129,16 @@ func FetchGroupAndAddSubGroups(c echo.Context) (string, error) {
 		return "", fmt.Errorf("Failed to decode response: %v", err)
 	}
 
-	if len(groups) == 0 {
-		return "", fmt.Errorf("No groups found with the specified name")
+	var groupID string
+	for _, group := range groups {
+		if group["name"] == createGroup.Name {
+			groupID, _ = group["id"].(string)
+			break
+		}
 	}
-
-	groupID, ok := groups[0]["id"].(string)
-	if !ok {
-		return "", fmt.Errorf("Invalid group ID format")
+	if groupID == "" {
+		return "", fmt.Errorf("Group with the name %s not found", createGroup.Name)
 	}
-
-	// Add subgroups under the fetched group
-	// if err := AddSubGroups(groupID); err != nil {
-	// 	return c.JSON(http.StatusInternalServerError, map[string]string{
-	// 		"error": fmt.Sprintf("Failed to add subgroups: %v", err),
-	// 	})
-	// }
 
 	// Return the group ID
 	return groupID, nil
@@ -152,12 +148,21 @@ func FetchGroupAndAddSubGroups(c echo.Context) (string, error) {
 func AddSubGroups(c echo.Context) error {
 	cfg := config.GetConfig()
 
+	if clientKeycloak.AccessToken == "" {
+		return c.JSON(http.StatusUnauthorized, map[string]string{
+			"error": "Authorization token is missing",
+		})
+	}
+
 	var data map[string]interface{}
 	if err := c.Bind(&data); err != nil {
+		fmt.Printf("Error binding data: %v\n", err)
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": fmt.Sprintf("Invalid request body: %v", err),
 		})
 	}
+
+	fmt.Printf("Request Data: %+v\n", data)
 
 	// Extract groupID and access_token from the data
 	groupID, ok := data["group_id"].(string)
@@ -167,7 +172,7 @@ func AddSubGroups(c echo.Context) error {
 		})
 	}
 
-	subGroups := []string{"Admin", "Account", "Delivery Man", "Packer"}
+	subGroups := []string{"Owner", "Admin", "Account", "Delivery Man", "Packer"}
 
 	for _, subgroup := range subGroups {
 		url := fmt.Sprintf("%s:8080/admin/realms/%s/groups/%s/children", cfg.Server, cfg.Realm, groupID)
@@ -188,21 +193,47 @@ func AddSubGroups(c echo.Context) error {
 			})
 		}
 		req.Header.Set("Authorization", "Bearer "+clientKeycloak.AccessToken)
-		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Content-Type", "application/json") //ensures proper formatting of the response data sent to the client.
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {
 			return fmt.Errorf("failed to execute request: %v", err)
 		}
+
 		defer resp.Body.Close()
 
+		respBody, _ := io.ReadAll(resp.Body)
+		fmt.Printf("Request to Keycloak: %s\nPayload: %s\nResponse: %s\n", url, string(payload), string(respBody))
+
 		if resp.StatusCode != http.StatusCreated {
-			return c.JSON(http.StatusInternalServerError, map[string]string{
-				"error": fmt.Sprintf("Failed to create subgroup %s: %v", subgroup, resp.Status),
-			})
+			fmt.Printf("Failed to create subgroup %s: %s\n", subgroup, string(respBody))
+			continue
+			// return c.JSON(http.StatusInternalServerError, map[string]string{
+			// 	"error": fmt.Sprintf("Failed to create subgroup %s: %s - %s", subgroup, resp.Status, string(respBody)),
+			// })
 		}
 		fmt.Printf("Subgroup \"%s\" created successfully.\n", subgroup)
+
+		// Extract subgroup ID from response and assign roles
+		var createdSubgroup map[string]interface{}
+		if err := json.Unmarshal(respBody, &createdSubgroup); err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{
+				"error": fmt.Sprintf("Failed to parse subgroup creation response: %v", err),
+			})
+		}
+
+		subgroupID, ok := createdSubgroup["id"].(string)
+		if !ok || subgroupID == "" {
+			fmt.Println("Failed to retrieve subgroup ID.")
+			continue
+		}
+
+		// Assign role to the created subgroup
+		err = GetRoleAndAssignToGroup(subgroup, subgroupID)
+		if err != nil {
+			fmt.Printf("Failed to assign role to subgroup \"%s\": %v\n", subgroup, err)
+		}
 	}
 	return c.JSON(http.StatusOK, map[string]string{
 		"message": "Subgroups created successfully",
