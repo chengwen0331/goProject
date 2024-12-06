@@ -135,14 +135,11 @@ func FetchGroupAndAddSubGroups(c echo.Context) (string, error) {
 
 	var groupID string
 	for _, group := range switchCompanies {
-		fmt.Print("Data:", group["name"])
+		fmt.Print("Data:", group)
 		if group["name"] == createGroup.Name {
 			groupID, _ = group["id"].(string)
-			switchCompany = SwitchCompany{
-				ID:         groupID,
-				Name:       group["name"].(string),
-				Attributes: group["attributes"].(map[string][]string), // Cast Attributes
-			}
+			switchCompany.Name = createGroup.Name
+			switchCompany.ID = groupID
 			break
 		}
 	}
