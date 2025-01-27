@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"golangProject/keycloak"
 	"log"
+	"net/http"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
@@ -51,9 +52,40 @@ func main() {
 
 	e.POST("/decrypt", keycloak.DecryptHandler)
 
+	e.POST("/setCookie", setPersistentCookies)
+
 	// Start the server on port 8010
 	fmt.Println("Server is running on port 8010")
-	if err := e.Start(":8010"); err != nil {
+	if err := e.Start(":8011"); err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
+
+}
+
+func setPersistentCookies(c echo.Context) error {
+	cookieName := c.QueryParam("name")
+	cookieValue := c.QueryParam("value")
+
+	// Check if name or value is empty
+	if cookieName == "" || cookieValue == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Missing cookie name or value"})
+	}
+
+	// Create the cookie
+	cookie := &http.Cookie{
+		Name:     cookieName,
+		Value:    cookieValue,
+		Path:     "/",
+		Domain:   "localhost",
+		MaxAge:   34560000, // 400 days
+		Secure:   true,     // Set to false for local development over HTTP
+		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode, // Consider changing to Lax for local development
+	}
+
+	// Set the cookie
+	c.SetCookie(cookie)
+
+	// Return a successful status code
+	return c.NoContent(http.StatusOK)
 }

@@ -1,7 +1,7 @@
 package keycloak
 
 import (
-	"encoding/json"
+	//"encoding/json"
 	"fmt"
 	"golangProject/config"
 	"net/http"
@@ -57,13 +57,13 @@ func FetchGroupInfoHandler(c echo.Context) error {
 	}
 
 	// Parse the response body
-	var groupInfo GroupInfo
-	if err := json.NewDecoder(resp.Body).Decode(&groupInfo); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": fmt.Sprintf("Failed to parse response: %v", err),
-		})
-	}
+	// var groupInfo GroupInfo
+	// if err := json.NewDecoder(resp.Body).Decode(&groupInfo); err != nil {
+	// 	return c.JSON(http.StatusInternalServerError, map[string]string{
+	// 		"error": fmt.Sprintf("Failed to parse response: %v", err),
+	// 	})
+	// }
 
 	// Return group info as a JSON response
-	return c.JSON(http.StatusOK, groupInfo)
+	return c.JSON(http.StatusOK, "groupInfo")
 }
