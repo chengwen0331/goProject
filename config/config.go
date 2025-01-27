@@ -12,7 +12,7 @@ type MyConfig struct {
 // GetConfig initializes and returns a MyConfig instance
 func GetConfig() *MyConfig {
 	return &MyConfig{
-		Server:       "http://192.168.11.27",
+		Server:       "http://localhost",
 		Realm:        "fml",
 		ClientID:     "fml_client",
 		ClientSecret: "8V2hrYbQoNS7y0eAjDv8X9kCzvGaMWu8",

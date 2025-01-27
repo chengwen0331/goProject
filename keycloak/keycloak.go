@@ -26,8 +26,9 @@ import (
 
 // Struct to hold the response from Keycloak for user search
 type KeycloakUserData struct {
-	ID    string `json:"id"`
-	Email string `json:"email"`
+	ID       string `json:"id"`
+	Email    string `json:"email"`
+	Username string `json:"username"`
 }
 
 // Struct for linking external identity provider (Google)
@@ -44,6 +45,8 @@ func TokenExchangeHandler(c echo.Context) error {
 	idToken := c.FormValue("id_token")
 	googleEmail := c.FormValue("google_email")
 	googleID := c.FormValue("google_id")
+	fmt.Println("Google Access Token is" + idToken)
+	fmt.Println("Google ID is" + googleID)
 	if idToken == "" && googleEmail == "" && googleID == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "ID token is required",
@@ -61,11 +64,12 @@ func TokenExchangeHandler(c echo.Context) error {
 	if user != nil {
 		linking, err := getFederatedIdentities(accessToken, user.ID)
 		if err != nil {
+			fmt.Println("no linking")
 			log.Fatalf("Error fetching federated identities: %v", err)
 		}
 		if linking == nil || len(linking) == 0 {
 			// Step 2: If the user exists, link Google account to the existing user
-			err := linkGoogleAccountToUser(accessToken, user.ID, googleID)
+			err := linkGoogleAccountToUser(accessToken, user.ID, googleID, user.Username)
 			if err != nil {
 				log.Fatalf("Error linking Google account to Keycloak user: %v", err)
 			}
@@ -75,7 +79,7 @@ func TokenExchangeHandler(c echo.Context) error {
 
 	//get access token
 	keycloakTokenUrl := fmt.Sprintf("%s:8080/realms/%s/protocol/openid-connect/token", cfg.Server, cfg.Realm)
-
+	fmt.Println("fml")
 	// Prepare the request to Keycloak
 	form := url.Values{}
 	form.Add("client_id", cfg.ClientID)
@@ -348,13 +352,15 @@ func GetKeycloakToken() (string, error) {
 }
 
 // Function to link the Google account to the Keycloak user
-func linkGoogleAccountToUser(keycloakAdminToken, keycloakUserID, googleUserID string) error {
+func linkGoogleAccountToUser(keycloakAdminToken, keycloakUserID, googleUserID, keycloakUsername string) error {
+	fmt.Println("keycloak id" + keycloakUserID)
+	fmt.Println("google id" + googleUserID)
 	cfg := config.GetConfig()
 	url := fmt.Sprintf("%s:8080/admin/realms/%s/users/%s/federated-identity/google", cfg.Server, cfg.Realm, keycloakUserID)
 	link := IdentityProviderLink{
 		IdentityProvider: "google", // Google is the identity provider
-		UserID:           keycloakUserID,
-		ExternalUserID:   googleUserID,
+		UserID:           googleUserID,
+		ExternalUserID:   keycloakUsername,
 	}
 
 	linkData, err := json.Marshal(link)
