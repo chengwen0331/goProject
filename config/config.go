@@ -12,11 +12,11 @@ type MyConfig struct {
 // GetConfig initializes and returns a MyConfig instance
 func GetConfig() *MyConfig {
 	return &MyConfig{
-		Server:       "http://localhost",
-		Realm:        "fml",
-		ClientID:     "fml_client",
-		ClientSecret: "8V2hrYbQoNS7y0eAjDv8X9kCzvGaMWu8",
-		ClientUrlID:  "ed8241ee-7bd3-45eb-b7e8-d9cb09f79236",
-		RedirectURI:  "http://192.168.11.27:9080/",
+		Server:       "http://192.168.0.230",
+		Realm:        "G-SSO-Connect",
+		ClientID:     "frontend-login",
+		ClientSecret: "intkmDx6ZK7QdCtQShUudO0q6z5mQBmb",
+		//ClientUrlID:  "ed8241ee-7bd3-45eb-b7e8-d9cb09f79236",
+		RedirectURI: "http://192.168.11.27:9080/",
 	}
 }

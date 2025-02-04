@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"golangProject/database"
+	"golangProject/handler"
 	"golangProject/keycloak"
 	"log"
 	"net/http"
@@ -12,6 +14,8 @@ import (
 )
 
 func main() {
+
+	database.InitializeDB()
 
 	// Initialize Echo instance
 	e := echo.New()
@@ -54,8 +58,14 @@ func main() {
 
 	e.POST("/setCookie", setPersistentCookies)
 
+	// Set up the POST route to get user info
+	e.GET("/keycloak-config", keycloak.GetKeycloakInfoHandler)
+
+	// Set up the POST route for token exchange
+	e.POST("/user", handler.SaveUser)
+
 	// Start the server on port 8010
-	fmt.Println("Server is running on port 8010")
+	fmt.Println("Server is running on port 8011")
 	if err := e.Start(":8011"); err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
